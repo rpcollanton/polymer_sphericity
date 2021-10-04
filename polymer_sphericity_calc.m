@@ -2,7 +2,7 @@ function [IQs,Vs,As,Bounds,cell_d,angles,atomlocs,Flagged] = polymer_sphericity_
     
     % This function reads a converged SCFT coordinate grid file of monomer
     % volume fraction, specified by "filename", and also takes the phase of
-    % the file as an input.
+    % the calculation as an input.
     %
     % The function has the 
     % 
@@ -13,7 +13,8 @@ function [IQs,Vs,As,Bounds,cell_d,angles,atomlocs,Flagged] = polymer_sphericity_
     % points of each particle analyzed in the phase (.bound)
     fprintf('Processing file of name: %s\n',filename)
 
-    [R,x,y,z,dim,lattype,cell_d,angles,n_mnr,grid] = read_rgrid(filename); % read the converged SCFT solution coordinate grid points
+    % read the converged SCFT solution coordinate grid data
+    [R,x,y,z,dim,lattype,cell_d,angles,n_mnr,grid] = read_rgrid(filename); 
     phase = lower(phase);
 
     % unit cell properties
@@ -49,7 +50,7 @@ function [IQs,Vs,As,Bounds,cell_d,angles,atomlocs,Flagged] = polymer_sphericity_
     end
     
     % for each "particle", find the particle's isoperimetric quotient, volume,
-    % area, and boundary coordinates.
+    % area, and boundary coordinates, among other things.
     
     for i = 1:n_atoms
         tn = tic;
@@ -66,6 +67,7 @@ function [IQs,Vs,As,Bounds,cell_d,angles,atomlocs,Flagged] = polymer_sphericity_
         fprintf('%d/%d complete. %0.2f seconds.\n',[i,n_atoms,toc(tn)])
     end
     t = toc(t0);
+    fprintf('Calculation took: %0.2f seconds\n',t)
     
     Flagged = any(Flags);
     
@@ -75,9 +77,8 @@ function [IQs,Vs,As,Bounds,cell_d,angles,atomlocs,Flagged] = polymer_sphericity_
     %    Bounds{i} = center_pbc(Bounds{i},atomlocs(1,:),cell_d,angles);
     % end
     
+    % Code below can display the isosurface point clouds
     %disp_phase(Bounds,IQs,cell_d,angles)
-    fprintf('Calculation took: %0.2f seconds\n',t)
-    format long;
     
     % clear unnecessary things for.... no reason i guess
     clear iq v a bound k radii thetas flagged    
@@ -85,7 +86,14 @@ function [IQs,Vs,As,Bounds,cell_d,angles,atomlocs,Flagged] = polymer_sphericity_
 end
 
 function [sum,E] = rad_hist(radii,thetas,plotHist)
+    % Calculates a histogram of "radii", or distances of points on the
+    % isosurface from the particle center
+    % Note that this histogram is reweighted to approximately account for 
+    % the "area" represented by each point given that the angles are spaced 
+    % evenly, as opposed to treating each point as representing the same
+    % area of the particle's surface
     % N is number of bins
+    
     h = histogram(radii);
     N = length(h.BinEdges)-1;
     [Y,E] = discretize(radii,N);
@@ -104,6 +112,7 @@ function [sum,E] = rad_hist(radii,thetas,plotHist)
 end
 
 function disp_phase(Bounds,IQs,cell_d,angles)
+    % plots point clouds and colors them by isoperimetric quotient
     n = length(Bounds);
     IQmin = min(IQs);
     IQmax = max(IQs);
@@ -267,16 +276,7 @@ function [bound, radii, flagged] = check_data(bound, atomloc, radii, cell_d, ang
     
     outliers = isoutlier(radii,'movmean',window,'ThresholdFactor',4);
     if any(outliers)
-        flagged = true; % flag this file for review.
-        
-        % FOR DEBUGGING %
-        % figure()
-        % idx = 1:length(radii);
-        % hold on
-        % plot(idx,radii)
-        % plot(idx(outliers),radii(outliers),'x')
-        % hold off
-        % legend('Original Data','Outlier')
+        flagged = true; % flag this file for review
         
         if sum(outliers) < 5
             fprintf('Outliers (%d) found in current particle. Replacing.\n',sum(outliers))
@@ -310,7 +310,7 @@ function [boundarycoords, radii, theta_out] = find_boundary(atomloc,R,x,y,z,cell
     
     R_max = R(:,:,:,n_max);
     
-    % AN UGLY HACK FOR NON-RECTANGULAR LATTICES %
+    % A SOLUTION FOR NON-RECTANGULAR LATTICES %
     % if not all right angles, create the scattered interpolating function! 
     % that way you aren't creating it over and over... 
     
@@ -326,7 +326,7 @@ function [boundarycoords, radii, theta_out] = find_boundary(atomloc,R,x,y,z,cell
     end
 
     
-    % THE MEAT - BIG PARALLELIZED FOR LOOP %
+    % THE MEAT - BIG "PARALLELIZED" FOR LOOP %
     
     % all of this is to make the loop suitable for parallelization through
     % parfor. make meshgrid of thetas and phis.
@@ -345,7 +345,7 @@ function [boundarycoords, radii, theta_out] = find_boundary(atomloc,R,x,y,z,cell
     boundarycoords = zeros(l_th*l_ph,3);
     radii = zeros(l_th*l_ph, 1);
     
-    % parallelized loop over spherical angles to find the points at the
+    % loop over spherical angles to find the points at the
     % monomerinterface, identified by a given volume fraction (50%).This is
     % done using interpolation of the grid points.
     
@@ -370,7 +370,7 @@ function [bdpt,r_bdpt] = find_bdpt(atomloc,theta,phi,cell_d,angles,F)
     % numerically solve for the point where the expansion is equal to 0.50,
     % IE the interface of the particle
     
-    frac = 0.50; % the isosurface we want to find
+    frac = 0.50; % the isosurface we want to find. you can change this!
     
     % decide which function to use, depending on whether a cubic grid or a
     % something else grid (triclinic? hexagonal?)
@@ -379,7 +379,7 @@ function [bdpt,r_bdpt] = find_bdpt(atomloc,theta,phi,cell_d,angles,F)
     
     options = optimset('TolX',1e-6);
     
-    % find approximate bounds for the function... engineered in
+    % find approximate bounds for the function... hard-coded/engineered in
     r0 = 0.0001;
     r1 = 0.06*norm(cell_d);
 
@@ -469,7 +469,8 @@ function basis = get_basis(cell_d,angles)
 end
 
 function subs = find_subs(loc,x,y,z)
-       
+    
+    % find the subscripts of the closest grid point to "loc"
     pts = [x(:) y(:) z(:)];
     
     k = dsearchn(pts,loc); % uses qhull (such a useful package!) to find closest point. the way I have written this assumes only one is found..
@@ -487,7 +488,7 @@ end
 
 function IQ = calc_IQ(A,V)
     % isoperimetric quotient. Equal to 1 for sphere. equal to 0 for thin
-    % sheet? 
+    % sheet
     IQ = 36*pi*V^2/A^3;
 end
         

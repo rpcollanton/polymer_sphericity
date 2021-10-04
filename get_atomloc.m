@@ -18,8 +18,9 @@ function loc = get_atomloc(phase,include_equiv)
     asymcoords('z') = [0 0 1/4; 1/2 1/2 0; 2/3 1/3 1/2];
     
     % if doing from scratch, IE using symmetry operations for each space
-    % group, then comment out the symopsHardCoded() and uncomment the
-    % symops()
+    % group to find particle locations, then use the symops() function
+    % instead of the symopsHardCoded() function
+    
     %locGross = symops(phase, asymcoords(phase)); % get all locations, including duplicates, for the given phase
     %loc = unique(double(locGross),'rows'); % remove duplicates
     

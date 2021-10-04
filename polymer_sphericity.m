@@ -1,46 +1,52 @@
 function polymer_sphericity(filelist_txt)
     % "filelist" is a text file containing a list of file paths. They are 
-    % assumed to contain the following folder structure:
+    % assumed to have a directory structure that includes the following
+    % folders in no particular order:
     %
-    % .../eps_Y_Y/PHASE/chiN_XX/.../*rho_rgrid
+    % .../eps_Y/...
+    % .../chiN_X/...
+    % .../PHASE/...
     %
-    % Y_Y gives the value of epsilon, the conformational asymmetry
+    % Y gives the value of epsilon, the conformational asymmetry
     % PHASE gives the type of phase being analyzed - A15,BCC,etc
-    % XX gives the value of chiN
+    % X gives the value of chiN
     %
-    % The file type of interest is rho_rgrid, which is a volume fraction
-    % coordinate grid file storing the results of a converged SCFT
-    % simulation. 
+    % The file type is "rho_rgrid", which is a volume fraction field in
+    % coordinate grid format storing the results of a converged SCFT
+    % simulation done with Polymer Self-Consistent Field (PSCF).
     % 
-    % The folder structure inside of chiN_XX and before eps_Y_Y is
-    % arbitrary. 
-    % 
-    % It is required that the matching .out file is in the same folder as
-    % the rho_rgrid
+    % It is required that the accompanying "out" file is in the same folder 
+    % as the "rho_rgrid" file
     
-    % open list of file paths, this list can be made using the linux "find"
-    % command. 
+    % BEGIN CODE %
+    
+    % open list of file paths.
+    % this list can be made using the unix "find" command. 
     
     filelistID = fopen(filelist_txt, 'r');
     filelist = strsplit(fscanf(filelistID,'%c'),'\n');
     
     % number of listed files
     nFiles = length(filelist);
+    % array to store paths of files with "failed" analyses, where an error
+    % was thrown
     failed = {};
     
-    % loop through each file path
+    % loop over all rho_rgrid files
     for f = 1:nFiles
         clear IQs Vs As Bounds cell_d angles atomlocs Flagged
 		clear phase eps chiN grid blockL
 		
 		filename = filelist{f};
-        % Determine the phase, epsilon value, and chiN value from the path... could incorporate this into the "findParams" function somehow. 
+        % Determine the phase, epsilon value, and chiN value from the path.
+        % NOTE %
+        % we could incorporate this into the "findParams" function somehow. 
         % This may be preferable long term for robustness against different directory structures than the one in this dataset
         % We can get eps (ratio of kuhn length of monomer 1 to 2) and chiN (directly) from the .out file. Phase isn't in there, only space group, so that HAS to be in the directory somewhere!!! 
 
 		try
 	        [phase,eps,chiN] = parsePath(filename);
-    	    % skip 'p6mm' because we don't really care about it but maybe in the future we will??? 
+    	    % skip 'p6mm' (hex) because it is not a particle-forming phase.
         	if strcmp(phase,'p6mm')
             	continue
         	end
@@ -49,18 +55,26 @@ function polymer_sphericity(filelist_txt)
 	            fprintf("File already processed: %s\n",filename)
     	        continue
         	end
-        	% From the "out" file, get some relevant parameters like block length, grid sizes. Could expand easily to get more if we wanted
+        	% From the "out" file, get some relevant parameters like block
+        	% length, grid sizes. Could expand easily to get more if we wanted.
         	[grid,blockL] = findParams(filename);
         catch EX
+            % if extracting result details fails, mark this file as
+            % "failed" and move onto the next file
+            failed{end+1} = strcat(filename,'\n');
 			fprintf("Prepping of file failed: %s\n",filename)
         	warning(EX.message)
 			continue
 		end
 
-		% Perform calculation to find isoperimetric quotient. Involves identifying atom centers, and then finding the 50% isosurface around that center.
+		% Perform calculation to find surface cloud and isoperimetric quotient. 
+        % Involves identifying atom centers, and then finding the 50% volume
+        % fraction isosurface around that center.
         try
             [IQs,Vs,As,Bounds,cell_d,angles,atomlocs,Flagged] = polymer_sphericity_calc(filename,phase);
         catch EX
+            % if geometric fails for any reason, mark as failed and
+            % continue to the next file.
             failed{end+1} = strcat(filename,'\n');
             fprintf("Analysis of file failed: %s\n",filename)
             warning(EX.message)
@@ -222,9 +236,7 @@ end
 function header = get_header(phase,eps,chiN,cell_d,angles,gridsize,blocklength,Flagged) 
 
     header = {};
-    
-    header{end+1} = 'This file was produced by Ryan Collanton in the summer of 2020 for the end goal of calculating, storing, and analyzing isoperimetric quotients.\n\n';
-    
+        
     header{end+1} = '---------------------------------------------------\n\n';
     
     header{end+1} = 'eps\n';
