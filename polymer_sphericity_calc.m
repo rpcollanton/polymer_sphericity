@@ -17,6 +17,12 @@ function [IQs,Vs,As,Bounds,cell_d,angles,atomlocs,Flagged] = polymer_sphericity_
     [R,x,y,z,dim,lattype,cell_d,angles,n_mnr,grid] = read_rgrid(filename); 
     phase = lower(phase);
 
+    % combine homopolymer and A-block volume fractions
+    % R_old = R;
+    % R = zeros(size(R_old,1),size(R_old,2),size(R_old,3),size(r_old,4)-1)
+    % R(:,:,:,1) = R_old(:,:,:,1)+R_old(:,:,:,2)
+    % R(:,:,:,2) = R_old(:,:,:,3)
+
     % unit cell properties
     %a = cell_d(1); b = cell_d(2); c = cell_d(3); alp = angle(1); bet = angle(2); gam = angle(3);
     %V_unitcell = a*b*c*sqrt(1+2*cos(alp)*cos(bet)*cos(gam)-cos(alp)^2-cos(bet)^2-cos(gam)^2);
@@ -301,9 +307,6 @@ function [boundarycoords, radii, theta_out] = find_boundary(atomloc,R,x,y,z,cell
     
     % WHAT MONOMER IN CORE %
     % find which monomer is in the core of the particle, call it n_max.
-    % isolate the volume fractions for that monomer
-    % May need to modify this for generality (triblock??)
-
     cen_sub = find_subs(atomloc,x,y,z);
     r_center = R(cen_sub(1),cen_sub(2),cen_sub(3),:);
     [~,n_max]=max(r_center);
