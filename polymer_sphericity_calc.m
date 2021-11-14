@@ -22,7 +22,7 @@ function [IQs,Vs,As,Bounds,cell_d,angles,atomlocs,Flagged] = polymer_sphericity_
     %V_unitcell = a*b*c*sqrt(1+2*cos(alp)*cos(bet)*cos(gam)-cos(alp)^2-cos(bet)^2-cos(gam)^2);
     
     basis = get_basis(cell_d,angles);
-    atomlocs = get_atomloc(phase,true); % miller indices locations of particles 
+    atomlocs = get_atomloc(phase); % miller indices locations of particles 
     atomlocs = round(((basis')*(atomlocs'))',7); % multiplied by basis vectors
     n_atoms = size(atomlocs,1);
     
@@ -43,7 +43,7 @@ function [IQs,Vs,As,Bounds,cell_d,angles,atomlocs,Flagged] = polymer_sphericity_
         r_type = 'spline';
     elseif (phase == "bcc")||(phase=="fcc")||(phase=="c15")
         r_type = 'spline';
-    elseif (phase == "c14") || (phase=="z")
+    elseif (phase == "c14") || (phase=="z") || (phase=="c36")
         r_type = 'natural';
     else
         error('Phase input not expected.');

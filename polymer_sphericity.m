@@ -129,7 +129,7 @@ function [phase,eps,chiN] = parsePath(filepath)
     % Split string by '/'
     folders = strsplit(filepath,'/');
     
-    phases = {'a15','c15','c14','z','sigma','fcc','bcc','p6mm'};
+    phases = {'a15','c15','c14','c36','z','sigma','fcc','bcc','p6mm'};
     
     % Declare variables
     chiN = [];
