@@ -19,8 +19,8 @@ function [IQs,Vs,As,Bounds,cell_d,angles,atomlocs,Flagged] = polymer_sphericity_
 
     % combine C-block and A-block volume fractions for an AB/B'C blend
     R = zeros(size(R_all,1),size(R_all,2),size(R_all,3),2);
-    R(:,:,:,1) = R_all(:,:,:,1)+R_all(:,:,:,2);
-    R(:,:,:,2) = R_all(:,:,:,3);
+    R(:,:,:,1) = R_all(:,:,:,1)+R_all(:,:,:,3);
+    R(:,:,:,2) = R_all(:,:,:,2);
 
     % unit cell properties
     %a = cell_d(1); b = cell_d(2); c = cell_d(3); alp = angle(1); bet = angle(2); gam = angle(3);
