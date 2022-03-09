@@ -14,14 +14,13 @@ function [IQs,Vs,As,Bounds,cell_d,angles,atomlocs,Flagged] = polymer_sphericity_
     fprintf('Processing file of name: %s\n',filename)
 
     % read the converged SCFT solution coordinate grid data
-    [R,x,y,z,dim,lattype,cell_d,angles,n_mnr,grid] = read_rgrid(filename); 
+    [R_all,x,y,z,dim,lattype,cell_d,angles,n_mnr,grid] = read_rgrid(filename); 
     phase = lower(phase);
 
-    % combine homopolymer and A-block volume fractions
-    % R_old = R;
-    % R = zeros(size(R_old,1),size(R_old,2),size(R_old,3),size(r_old,4)-1)
-    % R(:,:,:,1) = R_old(:,:,:,1)+R_old(:,:,:,2)
-    % R(:,:,:,2) = R_old(:,:,:,3)
+    % combine C-block and A-block volume fractions for an AB/B'C blend
+    R = zeros(size(R_all,1),size(R_all,2),size(R_all,3),2);
+    R(:,:,:,1) = R_all(:,:,:,1)+R_all(:,:,:,2);
+    R(:,:,:,2) = R_all(:,:,:,3);
 
     % unit cell properties
     %a = cell_d(1); b = cell_d(2); c = cell_d(3); alp = angle(1); bet = angle(2); gam = angle(3);
