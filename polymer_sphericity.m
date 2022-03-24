@@ -130,6 +130,7 @@ function [phase,eps,chiN] = parsePath(filepath)
     folders = strsplit(filepath,'/');
     
     phases = {'a15','c15','c14','z','sigma','fcc','bcc','p6mm'};
+    phases = [phases, 'bccab', 'bccbc'];
     
     % Declare variables
     chiN = [];
@@ -158,6 +159,9 @@ function [phase,eps,chiN] = parsePath(filepath)
             for j = 1:8
                 if strcmp(phases{j},lower(dirname))
                     phase = lower(dirname);
+                    if strcmp(phase, 'bccab') || strcmp(phase, 'bccbc')
+                        phase = 'bcc';
+                    end
                 end
             end
         end            
